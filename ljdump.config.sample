@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <ljdump>
+    <server>http://livejournal.com/interface/xmlrpc</server>
     <username>myaccount</username>
     <password>mypassword</password>
 </ljdump>
