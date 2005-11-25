@@ -1,6 +1,18 @@
 #!/bin/sh
 
 VERSION=`grep Version ljdump.py | cut -d' ' -f3`
+
+DIR=ljdump-$VERSION
+rm -rf $DIR
+mkdir $DIR
+cp ljdump.py ljdump.config.sample $DIR/
+
+TARGZ=ljdump-$VERSION.tar.gz
+rm $TARGZ
+tar czf $TARGZ $DIR/*
+
 ZIP=ljdump-$VERSION.zip
 rm $ZIP
-zip $ZIP ljdump.py ljdump.config.sample
+zip $ZIP $DIR/*
+
+rm -rf $DIR
