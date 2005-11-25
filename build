@@ -1,0 +1,6 @@
+#!/bin/sh
+
+VERSION=`grep Version ljdump.py | cut -d' ' -f3`
+ZIP=ljdump-$VERSION.zip
+rm $ZIP
+zip $ZIP ljdump.py ljdump.config.sample
