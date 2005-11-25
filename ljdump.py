@@ -1,7 +1,8 @@
+#!/usr/bin/python
 #
 # ljdump.py - livejournal archiver
 # Greg Hewgill <greg@hewgill.com> http://hewgill.com
-# Version 1.0
+# Version 1.0.1
 #
 # $Id$
 #
@@ -119,8 +120,8 @@ while True:
                     print "Error getting item: %s" % item['item']
                     pprint.pprint(x)
                     errors += 1
+            total += 1
         last = item['time']
-        total += 1
 print "%d total entries" % total
 print "%d fetched entries" % fetched
 if errors > 0:
