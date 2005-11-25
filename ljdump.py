@@ -31,6 +31,11 @@ Username = config.documentElement.getElementsByTagName("username")[0].childNodes
 Password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
 
 print "Fetching journal entries for: %s" % Username
+try:
+    os.mkdir(Username)
+    print "Created subdirectory: %s" % Username
+except:
+    pass
 
 server = xmlrpclib.ServerProxy("http://livejournal.com/interface/xmlrpc")
 
