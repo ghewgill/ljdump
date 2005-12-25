@@ -2,7 +2,7 @@
 #
 # ljdump.py - livejournal archiver
 # Greg Hewgill <greg@hewgill.com> http://hewgill.com
-# Version 1.0.2
+# Version 1.0.3
 #
 # $Id$
 #
@@ -24,7 +24,7 @@
 #              clear; the livejournal "challenge" password mechanism is used.
 #
 # This program may be run as often as needed to bring the backup copy up
-# to date. Only new items are downloaded.
+# to date. Both new and updated items are downloaded.
 #
 # LICENSE
 #
@@ -88,11 +88,20 @@ except:
 
 server = xmlrpclib.ServerProxy(Server)
 
-total = 0
-fetched = 0
+new = 0
 errors = 0
 
 last = ""
+f = open("%s/.last" % Username, "r")
+try:
+    last = f.readline()
+    if last[-1] == '\n':
+        last = last[:len(last)-1]
+    f.close()
+except:
+    pass
+origlast = last
+
 while True:
     r = server.LJ.XMLRPC.syncitems(dochallenge({
         'username': Username,
@@ -104,25 +113,27 @@ while True:
         break
     for item in r['syncitems']:
         if item['item'][0] == 'L':
-            fn = "%s/%s" % (Username, item['item'])
-            if not os.access(fn, os.F_OK):
-                print "Fetching journal entry %s" % item['item']
-                try:
-                    e = server.LJ.XMLRPC.getevents(dochallenge({
-                        'username': Username,
-                        'ver': 1,
-                        'selecttype': "one",
-                        'itemid': item['item'][2:],
-                    }, Password))
-                    writedump(fn, e['events'][0])
-                    fetched += 1
-                except xmlrpclib.Fault, x:
-                    print "Error getting item: %s" % item['item']
-                    pprint.pprint(x)
-                    errors += 1
-            total += 1
+            print "Fetching journal entry %s (%s)" % (item['item'], item['action'])
+            try:
+                e = server.LJ.XMLRPC.getevents(dochallenge({
+                    'username': Username,
+                    'ver': 1,
+                    'selecttype': "one",
+                    'itemid': item['item'][2:],
+                }, Password))
+                writedump("%s/%s" % (Username, item['item']), e['events'][0])
+                new += 1
+            except xmlrpclib.Fault, x:
+                print "Error getting item: %s" % item['item']
+                pprint.pprint(x)
+                errors += 1
         last = item['time']
-print "%d total entries" % total
-print "%d fetched entries" % fetched
+f = open("%s/.last" % Username, "w")
+f.write("%s\n" % last)
+f.close()
+if origlast:
+    print "%d new entries (since %s)" % (new, origlast)
+else:
+    print "%d new entries" % new
 if errors > 0:
     print "%d errors" % errors
