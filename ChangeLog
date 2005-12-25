@@ -1,0 +1,18 @@
+ChangeLog - ljdump
+
+Version 1.0.3 - 2005-12-25
+
+- Get updated journal entries in addition to new entries
+
+Version 1.0.2 - 2005-11-25
+
+- Set +x on ljdump.py
+
+Version 1.0.1 - 2005-11-25
+
+- Corrected total items count
+- Added shebang line to top of script
+
+Version 1.0 - 2005-11-25
+
+- Initial version
