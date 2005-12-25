@@ -16,3 +16,6 @@ rm $ZIP
 zip $ZIP $DIR/*
 
 rm -rf $DIR
+
+md5 $TARGZ
+md5 $ZIP
