@@ -92,8 +92,8 @@ new = 0
 errors = 0
 
 last = ""
-f = open("%s/.last" % Username, "r")
 try:
+    f = open("%s/.last" % Username, "r")
     last = f.readline()
     if last[-1] == '\n':
         last = last[:len(last)-1]
