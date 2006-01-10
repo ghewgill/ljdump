@@ -46,7 +46,7 @@
 #
 # Copyright (c) 2005-2006 Greg Hewgill
 
-import codecs, md5, os, pickle, pprint, sys, urllib2, xml.dom.minidom, xmlrpclib
+import codecs, md5, os, pickle, pprint, re, sys, urllib2, xml.dom.minidom, xmlrpclib
 from xml.sax import saxutils
 
 def calcchallenge(challenge, password):
@@ -67,10 +67,10 @@ def flatresponse(response):
     return r
 
 def getljsession(username, password):
-    r = urllib2.urlopen("http://livejournal.com/interface/flat", "mode=getchallenge")
+    r = urllib2.urlopen(Server+"/interface/flat", "mode=getchallenge")
     response = flatresponse(r)
     r.close()
-    r = urllib2.urlopen("http://livejournal.com/interface/flat", "mode=sessiongenerate&user=%s&auth_method=challenge&auth_challenge=%s&auth_response=%s" % (username, response['challenge'], calcchallenge(response['challenge'], password)))
+    r = urllib2.urlopen(Server+"/interface/flat", "mode=sessiongenerate&user=%s&auth_method=challenge&auth_challenge=%s&auth_response=%s" % (username, response['challenge'], calcchallenge(response['challenge'], password)))
     response = flatresponse(r)
     r.close()
     return response['ljsession']
@@ -118,6 +118,10 @@ Server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].
 Username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
 Password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
 
+m = re.search("(.*)/interface/xmlrpc", Server)
+if m:
+    Server = m.group(1)
+
 print "Fetching journal entries for: %s" % Username
 try:
     os.mkdir(Username)
@@ -127,7 +131,7 @@ except:
 
 ljsession = getljsession(Username, Password)
 
-server = xmlrpclib.ServerProxy(Server)
+server = xmlrpclib.ServerProxy(Server+"/interface/xmlrpc")
 
 newentries = 0
 newcomments = 0
@@ -219,7 +223,7 @@ except:
 
 maxid = lastmaxid
 while True:
-    r = urllib2.urlopen(urllib2.Request("http://livejournal.com/export_comments.bml?get=comment_meta&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
+    r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
     meta = xml.dom.minidom.parse(r)
     r.close()
     for c in meta.getElementsByTagName("comment"):
@@ -246,7 +250,7 @@ f.close()
 newmaxid = maxid
 maxid = lastmaxid
 while True:
-    r = urllib2.urlopen(urllib2.Request("http://livejournal.com/export_comments.bml?get=comment_body&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
+    r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
     meta = xml.dom.minidom.parse(r)
     r.close()
     for c in meta.getElementsByTagName("comment"):
