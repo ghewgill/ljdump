@@ -156,6 +156,15 @@ except:
     pass
 origlastsync = lastsync
 
+r = server.LJ.XMLRPC.login(dochallenge({
+    'username': Username,
+    'ver': 1,
+    'getpickws': 1,
+    'getpickwurls': 1,
+}, Password))
+userpics = dict(zip(r['pickws'], r['pickwurls']))
+userpics['*'] = r['defaultpicurl']
+
 while True:
     r = server.LJ.XMLRPC.syncitems(dochallenge({
         'username': Username,
@@ -245,6 +254,14 @@ f.close()
 
 f = open("%s/user.map" % Username, "w")
 pickle.dump(usermap, f)
+f.close()
+
+f = open("%s/userpics.xml" % Username, "w")
+print >>f, """<?xml version="1.0"?>"""
+print >>f, "<userpics>"
+for p in userpics:
+    print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
+print >>f, "</userpics>"
 f.close()
 
 newmaxid = maxid
