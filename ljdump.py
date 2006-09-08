@@ -2,7 +2,7 @@
 #
 # ljdump.py - livejournal archiver
 # Greg Hewgill <greg@hewgill.com> http://hewgill.com
-# Version 1.1
+# Version 1.2
 #
 # $Id$
 #
