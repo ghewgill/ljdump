@@ -1,2 +1,3 @@
 - userpic without keyword
 - mention ljdump community in docs
+- write .last file after each entry for robustness (Andrey "Croco" Stolyarov)
