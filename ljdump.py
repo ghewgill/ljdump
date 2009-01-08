@@ -106,6 +106,12 @@ def writedump(fn, event):
     dumpelement(f, "event", event)
     f.close()
 
+def writelast():
+    f = open("%s/.last" % Username, "w")
+    f.write("%s\n" % lastsync)
+    f.write("%s\n" % lastmaxid)
+    f.close()
+
 def createxml(doc, name, map):
     e = doc.createElement(name)
     for k in map.keys():
@@ -201,6 +207,7 @@ while True:
                 pprint.pprint(x)
                 errors += 1
         lastsync = item['time']
+        writelast()
 
 # The following code doesn't work because the server rejects our repeated calls.
 # http://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
@@ -324,10 +331,7 @@ while True:
 
 lastmaxid = maxid
 
-f = open("%s/.last" % Username, "w")
-f.write("%s\n" % lastsync)
-f.write("%s\n" % lastmaxid)
-f.close()
+writelast()
 
 if origlastsync:
     print "%d new entries, %d new comments (since %s)" % (newentries, newcomments, origlastsync)
