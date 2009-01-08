@@ -46,8 +46,14 @@
 #
 # Copyright (c) 2005-2006 Greg Hewgill
 
-import codecs, md5, os, pickle, pprint, re, sys, urllib2, xml.dom.minidom, xmlrpclib
+import codecs, md5, os, pickle, pprint, re, shutil, sys, urllib2, xml.dom.minidom, xmlrpclib
 from xml.sax import saxutils
+
+MimeExtensions = {
+    "image/gif": ".gif",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+}
 
 def calcchallenge(challenge, password):
     return md5.new(challenge+md5.new(password).hexdigest()).hexdigest()
@@ -256,11 +262,18 @@ f = open("%s/user.map" % Username, "w")
 pickle.dump(usermap, f)
 f.close()
 
+print "Fetching userpics for: %s" % Username
 f = open("%s/userpics.xml" % Username, "w")
 print >>f, """<?xml version="1.0"?>"""
 print >>f, "<userpics>"
 for p in userpics:
     print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
+    pic = urllib2.urlopen(userpics[p])
+    ext = MimeExtensions.get(pic.info()["Content-Type"], "")
+    picf = open("%s/%s%s" % (Username, codecs.utf_8_decode(p)[0], ext), "wb")
+    shutil.copyfileobj(pic, picf)
+    pic.close()
+    picf.close()
 print >>f, "</userpics>"
 f.close()
 

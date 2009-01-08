@@ -3,6 +3,7 @@ ChangeLog - ljdump
 Version 1.3.1 - 2009-01-08
 
 - Handle userpic keywords with non-ASCII characters
+- Download and save userpic images
 
 Version 1.2 - 2006-09-08
 
