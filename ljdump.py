@@ -284,7 +284,13 @@ for p in userpics:
     print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
     pic = urllib2.urlopen(userpics[p])
     ext = MimeExtensions.get(pic.info()["Content-Type"], "")
-    picf = open("%s/%s%s" % (Username, codecs.utf_8_decode(p)[0], ext), "wb")
+    try:
+        picfn = codecs.utf_8_decode(p)[0]
+        picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
+    except:
+        # for installations where the above utf_8_decode doesn't work
+        picfn = "".join([ord(x) < 128 and x or "?" for x in p])
+        picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
     shutil.copyfileobj(pic, picf)
     pic.close()
     picf.close()
