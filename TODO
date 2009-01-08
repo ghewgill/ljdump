@@ -1,7 +1,6 @@
 - userpic without keyword
-- mention ljdump community in docs
-- write .last file after each entry for robustness (Andrey "Croco" Stolyarov)
-- grab userpics
-- userpics with UTF-8 in tag names causes crash
-- empty entry: http://community.livejournal.com/ljdump/795.html
 - download lj community
+- http://www.livejournal.com/settings/?c=OldEncoding
+
+instructions:
+http://jimmyether.livejournal.com/190262.html
