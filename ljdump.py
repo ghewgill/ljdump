@@ -26,6 +26,9 @@
 # This program may be run as often as needed to bring the backup copy up
 # to date. Both new and updated items are downloaded.
 #
+# The community http://ljdump.livejournal.com has been set up for questions
+# or comments.
+#
 # LICENSE
 #
 # This software is provided 'as-is', without any express or implied
