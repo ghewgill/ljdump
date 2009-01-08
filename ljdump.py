@@ -162,7 +162,7 @@ r = server.LJ.XMLRPC.login(dochallenge({
     'getpickws': 1,
     'getpickwurls': 1,
 }, Password))
-userpics = dict(zip(r['pickws'], r['pickwurls']))
+userpics = dict(zip(map(str, r['pickws']), r['pickwurls']))
 userpics['*'] = r['defaultpicurl']
 
 while True:
