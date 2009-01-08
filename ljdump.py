@@ -190,8 +190,12 @@ while True:
                     'selecttype': "one",
                     'itemid': item['item'][2:],
                 }, Password))
-                writedump("%s/%s" % (Username, item['item']), e['events'][0])
-                newentries += 1
+                if e['events']:
+                    writedump("%s/%s" % (Username, item['item']), e['events'][0])
+                    newentries += 1
+                else:
+                    print "Unexpected empty item: %s" % item['item']
+                    errors += 1
             except xmlrpclib.Fault, x:
                 print "Error getting item: %s" % item['item']
                 pprint.pprint(x)
