@@ -75,16 +75,16 @@ def flatresponse(response):
         r[name] = value
     return r
 
-def getljsession(username, password):
-    r = urllib2.urlopen(Server+"/interface/flat", "mode=getchallenge")
+def getljsession(server, username, password):
+    r = urllib2.urlopen(server+"/interface/flat", "mode=getchallenge")
     response = flatresponse(r)
     r.close()
-    r = urllib2.urlopen(Server+"/interface/flat", "mode=sessiongenerate&user=%s&auth_method=challenge&auth_challenge=%s&auth_response=%s" % (username, response['challenge'], calcchallenge(response['challenge'], password)))
+    r = urllib2.urlopen(server+"/interface/flat", "mode=sessiongenerate&user=%s&auth_method=challenge&auth_challenge=%s&auth_response=%s" % (username, response['challenge'], calcchallenge(response['challenge'], password)))
     response = flatresponse(r)
     r.close()
     return response['ljsession']
 
-def dochallenge(params, password):
+def dochallenge(server, params, password):
     challenge = server.LJ.XMLRPC.getchallenge()
     params.update({
         'auth_method': "challenge",
@@ -109,8 +109,8 @@ def writedump(fn, event):
     dumpelement(f, "event", event)
     f.close()
 
-def writelast():
-    f = open("%s/.last" % Username, "w")
+def writelast(username, lastsync, lastmaxid):
+    f = open("%s/.last" % username, "w")
     f.write("%s\n" % lastsync)
     f.write("%s\n" % lastmaxid)
     f.close()
@@ -128,224 +128,227 @@ def gettext(e):
         return ""
     return e[0].firstChild.nodeValue
 
-config = xml.dom.minidom.parse("ljdump.config")
-Server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].data
-Username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
-Password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
+def ljdump(Server, Username, Password):
+    m = re.search("(.*)/interface/xmlrpc", Server)
+    if m:
+        Server = m.group(1)
 
-m = re.search("(.*)/interface/xmlrpc", Server)
-if m:
-    Server = m.group(1)
+    print "Fetching journal entries for: %s" % Username
+    try:
+        os.mkdir(Username)
+        print "Created subdirectory: %s" % Username
+    except:
+        pass
 
-print "Fetching journal entries for: %s" % Username
-try:
-    os.mkdir(Username)
-    print "Created subdirectory: %s" % Username
-except:
-    pass
+    ljsession = getljsession(Server, Username, Password)
 
-ljsession = getljsession(Username, Password)
+    server = xmlrpclib.ServerProxy(Server+"/interface/xmlrpc")
 
-server = xmlrpclib.ServerProxy(Server+"/interface/xmlrpc")
+    newentries = 0
+    newcomments = 0
+    errors = 0
 
-newentries = 0
-newcomments = 0
-errors = 0
+    lastsync = ""
+    lastmaxid = 0
+    try:
+        f = open("%s/.last" % Username, "r")
+        lastsync = f.readline()
+        if lastsync[-1] == '\n':
+            lastsync = lastsync[:len(lastsync)-1]
+        lastmaxid = f.readline()
+        if len(lastmaxid) > 0 and lastmaxid[-1] == '\n':
+            lastmaxid = lastmaxid[:len(lastmaxid)-1]
+        if lastmaxid == "":
+            lastmaxid = 0
+        else:
+            lastmaxid = int(lastmaxid)
+        f.close()
+    except:
+        pass
+    origlastsync = lastsync
 
-lastsync = ""
-lastmaxid = 0
-try:
-    f = open("%s/.last" % Username, "r")
-    lastsync = f.readline()
-    if lastsync[-1] == '\n':
-        lastsync = lastsync[:len(lastsync)-1]
-    lastmaxid = f.readline()
-    if len(lastmaxid) > 0 and lastmaxid[-1] == '\n':
-        lastmaxid = lastmaxid[:len(lastmaxid)-1]
-    if lastmaxid == "":
-        lastmaxid = 0
-    else:
-        lastmaxid = int(lastmaxid)
-    f.close()
-except:
-    pass
-origlastsync = lastsync
-
-r = server.LJ.XMLRPC.login(dochallenge({
-    'username': Username,
-    'ver': 1,
-    'getpickws': 1,
-    'getpickwurls': 1,
-}, Password))
-userpics = dict(zip(map(str, r['pickws']), r['pickwurls']))
-userpics['*'] = r['defaultpicurl']
-
-while True:
-    r = server.LJ.XMLRPC.syncitems(dochallenge({
+    r = server.LJ.XMLRPC.login(dochallenge(server, {
         'username': Username,
         'ver': 1,
-        'lastsync': lastsync,
+        'getpickws': 1,
+        'getpickwurls': 1,
     }, Password))
-    #pprint.pprint(r)
-    if len(r['syncitems']) == 0:
-        break
-    for item in r['syncitems']:
-        if item['item'][0] == 'L':
-            print "Fetching journal entry %s (%s)" % (item['item'], item['action'])
-            try:
-                e = server.LJ.XMLRPC.getevents(dochallenge({
-                    'username': Username,
-                    'ver': 1,
-                    'selecttype': "one",
-                    'itemid': item['item'][2:],
-                }, Password))
-                if e['events']:
-                    writedump("%s/%s" % (Username, item['item']), e['events'][0])
-                    newentries += 1
-                else:
-                    print "Unexpected empty item: %s" % item['item']
+    userpics = dict(zip(map(str, r['pickws']), r['pickwurls']))
+    userpics['*'] = r['defaultpicurl']
+
+    while True:
+        r = server.LJ.XMLRPC.syncitems(dochallenge(server, {
+            'username': Username,
+            'ver': 1,
+            'lastsync': lastsync,
+        }, Password))
+        #pprint.pprint(r)
+        if len(r['syncitems']) == 0:
+            break
+        for item in r['syncitems']:
+            if item['item'][0] == 'L':
+                print "Fetching journal entry %s (%s)" % (item['item'], item['action'])
+                try:
+                    e = server.LJ.XMLRPC.getevents(dochallenge(server, {
+                        'username': Username,
+                        'ver': 1,
+                        'selecttype': "one",
+                        'itemid': item['item'][2:],
+                    }, Password))
+                    if e['events']:
+                        writedump("%s/%s" % (Username, item['item']), e['events'][0])
+                        newentries += 1
+                    else:
+                        print "Unexpected empty item: %s" % item['item']
+                        errors += 1
+                except xmlrpclib.Fault, x:
+                    print "Error getting item: %s" % item['item']
+                    pprint.pprint(x)
                     errors += 1
-            except xmlrpclib.Fault, x:
-                print "Error getting item: %s" % item['item']
-                pprint.pprint(x)
-                errors += 1
-        lastsync = item['time']
-        writelast()
+            lastsync = item['time']
+            writelast(Username, lastsync, lastmaxid)
 
-# The following code doesn't work because the server rejects our repeated calls.
-# http://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
-# contains the statement "You should use the syncitems selecttype in
-# conjuntions [sic] with the syncitems protocol mode", but provides
-# no other explanation about how these two function calls should
-# interact. Therefore we just do the above slow one-at-a-time method.
+    # The following code doesn't work because the server rejects our repeated calls.
+    # http://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
+    # contains the statement "You should use the syncitems selecttype in
+    # conjuntions [sic] with the syncitems protocol mode", but provides
+    # no other explanation about how these two function calls should
+    # interact. Therefore we just do the above slow one-at-a-time method.
 
-#while True:
-#    r = server.LJ.XMLRPC.getevents(dochallenge({
-#        'username': Username,
-#        'ver': 1,
-#        'selecttype': "syncitems",
-#        'lastsync': lastsync,
-#    }, Password))
-#    pprint.pprint(r)
-#    if len(r['events']) == 0:
-#        break
-#    for item in r['events']:
-#        writedump("%s/L-%d" % (Username, item['itemid']), item)
-#        newentries += 1
-#        lastsync = item['eventtime']
+    #while True:
+    #    r = server.LJ.XMLRPC.getevents(dochallenge(server, {
+    #        'username': Username,
+    #        'ver': 1,
+    #        'selecttype': "syncitems",
+    #        'lastsync': lastsync,
+    #    }, Password))
+    #    pprint.pprint(r)
+    #    if len(r['events']) == 0:
+    #        break
+    #    for item in r['events']:
+    #        writedump("%s/L-%d" % (Username, item['itemid']), item)
+    #        newentries += 1
+    #        lastsync = item['eventtime']
 
-print "Fetching journal comments for: %s" % Username
+    print "Fetching journal comments for: %s" % Username
 
-try:
-    f = open("%s/comment.meta" % Username)
-    metacache = pickle.load(f)
-    f.close()
-except:
-    metacache = {}
-
-try:
-    f = open("%s/user.map" % Username)
-    usermap = pickle.load(f)
-    f.close()
-except:
-    usermap = {}
-
-maxid = lastmaxid
-while True:
-    r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
-    meta = xml.dom.minidom.parse(r)
-    r.close()
-    for c in meta.getElementsByTagName("comment"):
-        id = int(c.getAttribute("id"))
-        metacache[id] = {
-            'posterid': c.getAttribute("posterid"),
-            'state': c.getAttribute("state"),
-        }
-        if id > maxid:
-            maxid = id
-    for u in meta.getElementsByTagName("usermap"):
-        usermap[u.getAttribute("id")] = u.getAttribute("user")
-    if maxid >= int(meta.getElementsByTagName("maxid")[0].firstChild.nodeValue):
-        break
-
-f = open("%s/comment.meta" % Username, "w")
-pickle.dump(metacache, f)
-f.close()
-
-f = open("%s/user.map" % Username, "w")
-pickle.dump(usermap, f)
-f.close()
-
-print "Fetching userpics for: %s" % Username
-f = open("%s/userpics.xml" % Username, "w")
-print >>f, """<?xml version="1.0"?>"""
-print >>f, "<userpics>"
-for p in userpics:
-    print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
-    pic = urllib2.urlopen(userpics[p])
-    ext = MimeExtensions.get(pic.info()["Content-Type"], "")
-    picfn = re.sub(r"[\/]", "_", p)
     try:
-        picfn = codecs.utf_8_decode(picfn)[0]
-        picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
+        f = open("%s/comment.meta" % Username)
+        metacache = pickle.load(f)
+        f.close()
     except:
-        # for installations where the above utf_8_decode doesn't work
-        picfn = "".join([ord(x) < 128 and x or "?" for x in picfn])
-        picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
-    shutil.copyfileobj(pic, picf)
-    pic.close()
-    picf.close()
-print >>f, "</userpics>"
-f.close()
+        metacache = {}
 
-newmaxid = maxid
-maxid = lastmaxid
-while True:
-    r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
-    meta = xml.dom.minidom.parse(r)
-    r.close()
-    for c in meta.getElementsByTagName("comment"):
-        id = int(c.getAttribute("id"))
-        jitemid = c.getAttribute("jitemid")
-        comment = {
-            'id': str(id),
-            'parentid': c.getAttribute("parentid"),
-            'subject': gettext(c.getElementsByTagName("subject")),
-            'date': gettext(c.getElementsByTagName("date")),
-            'body': gettext(c.getElementsByTagName("body")),
-            'state': metacache[id]['state'],
-        }
-        if usermap.has_key(c.getAttribute("posterid")):
-            comment["user"] = usermap[c.getAttribute("posterid")]
+    try:
+        f = open("%s/user.map" % Username)
+        usermap = pickle.load(f)
+        f.close()
+    except:
+        usermap = {}
+
+    maxid = lastmaxid
+    while True:
+        r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
+        meta = xml.dom.minidom.parse(r)
+        r.close()
+        for c in meta.getElementsByTagName("comment"):
+            id = int(c.getAttribute("id"))
+            metacache[id] = {
+                'posterid': c.getAttribute("posterid"),
+                'state': c.getAttribute("state"),
+            }
+            if id > maxid:
+                maxid = id
+        for u in meta.getElementsByTagName("usermap"):
+            usermap[u.getAttribute("id")] = u.getAttribute("user")
+        if maxid >= int(meta.getElementsByTagName("maxid")[0].firstChild.nodeValue):
+            break
+
+    f = open("%s/comment.meta" % Username, "w")
+    pickle.dump(metacache, f)
+    f.close()
+
+    f = open("%s/user.map" % Username, "w")
+    pickle.dump(usermap, f)
+    f.close()
+
+    print "Fetching userpics for: %s" % Username
+    f = open("%s/userpics.xml" % Username, "w")
+    print >>f, """<?xml version="1.0"?>"""
+    print >>f, "<userpics>"
+    for p in userpics:
+        print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
+        pic = urllib2.urlopen(userpics[p])
+        ext = MimeExtensions.get(pic.info()["Content-Type"], "")
+        picfn = re.sub(r"[\/]", "_", p)
         try:
-            entry = xml.dom.minidom.parse("%s/C-%s" % (Username, jitemid))
+            picfn = codecs.utf_8_decode(picfn)[0]
+            picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
         except:
-            entry = xml.dom.minidom.getDOMImplementation().createDocument(None, "comments", None)
-        found = False
-        for d in entry.getElementsByTagName("comment"):
-            if int(d.getElementsByTagName("id")[0].firstChild.nodeValue) == id:
-                found = True
-                break
-        if found:
-            print "Warning: downloaded duplicate comment id %d in jitemid %s" % (id, jitemid)
-        else:
-            entry.documentElement.appendChild(createxml(entry, "comment", comment))
-            f = codecs.open("%s/C-%s" % (Username, jitemid), "w", "UTF-8")
-            entry.writexml(f)
-            f.close()
-            newcomments += 1
-        if id > maxid:
-            maxid = id
-    if maxid >= newmaxid:
-        break
+            # for installations where the above utf_8_decode doesn't work
+            picfn = "".join([ord(x) < 128 and x or "?" for x in picfn])
+            picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
+        shutil.copyfileobj(pic, picf)
+        pic.close()
+        picf.close()
+    print >>f, "</userpics>"
+    f.close()
 
-lastmaxid = maxid
+    newmaxid = maxid
+    maxid = lastmaxid
+    while True:
+        r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
+        meta = xml.dom.minidom.parse(r)
+        r.close()
+        for c in meta.getElementsByTagName("comment"):
+            id = int(c.getAttribute("id"))
+            jitemid = c.getAttribute("jitemid")
+            comment = {
+                'id': str(id),
+                'parentid': c.getAttribute("parentid"),
+                'subject': gettext(c.getElementsByTagName("subject")),
+                'date': gettext(c.getElementsByTagName("date")),
+                'body': gettext(c.getElementsByTagName("body")),
+                'state': metacache[id]['state'],
+            }
+            if usermap.has_key(c.getAttribute("posterid")):
+                comment["user"] = usermap[c.getAttribute("posterid")]
+            try:
+                entry = xml.dom.minidom.parse("%s/C-%s" % (Username, jitemid))
+            except:
+                entry = xml.dom.minidom.getDOMImplementation().createDocument(None, "comments", None)
+            found = False
+            for d in entry.getElementsByTagName("comment"):
+                if int(d.getElementsByTagName("id")[0].firstChild.nodeValue) == id:
+                    found = True
+                    break
+            if found:
+                print "Warning: downloaded duplicate comment id %d in jitemid %s" % (id, jitemid)
+            else:
+                entry.documentElement.appendChild(createxml(entry, "comment", comment))
+                f = codecs.open("%s/C-%s" % (Username, jitemid), "w", "UTF-8")
+                entry.writexml(f)
+                f.close()
+                newcomments += 1
+            if id > maxid:
+                maxid = id
+        if maxid >= newmaxid:
+            break
 
-writelast()
+    lastmaxid = maxid
 
-if origlastsync:
-    print "%d new entries, %d new comments (since %s)" % (newentries, newcomments, origlastsync)
-else:
-    print "%d new entries, %d new comments" % (newentries, newcomments)
-if errors > 0:
-    print "%d errors" % errors
+    writelast(Username, lastsync, lastmaxid)
+
+    if origlastsync:
+        print "%d new entries, %d new comments (since %s)" % (newentries, newcomments, origlastsync)
+    else:
+        print "%d new entries, %d new comments" % (newentries, newcomments)
+    if errors > 0:
+        print "%d errors" % errors
+
+if __name__ == "__main__":
+    config = xml.dom.minidom.parse("ljdump.config")
+    server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].data
+    username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
+    password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
+    ljdump(server, username, password)
