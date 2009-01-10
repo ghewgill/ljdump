@@ -259,13 +259,13 @@ def ljdump(Server, Username, Password):
         print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
         pic = urllib2.urlopen(userpics[p])
         ext = MimeExtensions.get(pic.info()["Content-Type"], "")
-        picfn = re.sub(r"[\/]", "_", p)
+        picfn = re.sub(r'[*?\\/:<>"|]', "_", p)
         try:
             picfn = codecs.utf_8_decode(picfn)[0]
             picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
         except:
             # for installations where the above utf_8_decode doesn't work
-            picfn = "".join([ord(x) < 128 and x or "?" for x in picfn])
+            picfn = "".join([ord(x) < 128 and x or "_" for x in picfn])
             picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
         shutil.copyfileobj(pic, picf)
         pic.close()

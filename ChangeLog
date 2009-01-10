@@ -4,6 +4,7 @@ Version 1.3.3 - 2009-01-10
 
 - Feature: ljdump now prompts for login info if ljdump.config does not exist
 - Bugfix: Automatically handle UnicodeDecodeError for old entries
+- Bugfix: Handle more non-filename characters of userpic keywords
 
 Version 1.3.2 - 2009-01-09
 
