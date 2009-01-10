@@ -74,7 +74,11 @@ def dumpelement(f, name, e):
         if isinstance(e[k], {}.__class__):
             dumpelement(f, k, e[k])
         else:
-            s = unicode(str(e[k]), "UTF-8")
+            try:
+                s = unicode(str(e[k]), "UTF-8")
+            except UnicodeDecodeError:
+                # fall back to Latin-1 for old entries that aren't UTF-8
+                s = unicode(str(e[k]), "cp1252")
             f.write("<%s>%s</%s>\n" % (k, saxutils.escape(s), k))
     f.write("</%s>\n" % name)
 

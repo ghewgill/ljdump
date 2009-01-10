@@ -3,6 +3,7 @@ ChangeLog - ljdump
 Version 1.3.3 - 2009-01-10
 
 - Feature: ljdump now prompts for login info if ljdump.config does not exist
+- Bugfix: Automatically handle UnicodeDecodeError for old entries
 
 Version 1.3.2 - 2009-01-09
 
