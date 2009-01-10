@@ -1,5 +1,9 @@
 ChangeLog - ljdump
 
+Version 1.3.3 - 2009-01-10
+
+- Feature: ljdump now prompts for login info if ljdump.config does not exist
+
 Version 1.3.2 - 2009-01-09
 
 - Bugfix: Handle case where userpic keywords contain a / or \.

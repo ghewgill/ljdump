@@ -322,8 +322,19 @@ def ljdump(Server, Username, Password):
         print "%d errors" % errors
 
 if __name__ == "__main__":
-    config = xml.dom.minidom.parse("ljdump.config")
-    server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].data
-    username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
-    password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
+    if os.access("ljdump.config", os.F_OK):
+        config = xml.dom.minidom.parse("ljdump.config")
+        server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].data
+        username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
+        password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
+    else:
+        from getpass import getpass
+        print "ljdump - livejournal archiver"
+        print
+        print "Enter your Livejournal username and password."
+        print
+        server = "http://livejournal.com"
+        username = raw_input("Username: ")
+        password = getpass("Password: ")
+        print
     ljdump(server, username, password)

@@ -3,6 +3,15 @@ ljdump - livejournal archiver
 This program reads the journal entries from a livejournal (or compatible)
 blog site and archives them in a subdirectory named after the journal name.
 
+The simplest way to run this is to execute the ljdump.py script with Python.
+Depending on your OS, you may be able to double-click the ljdump.py script
+directly, or you may need to open a Terminal/Command Prompt window to run it.
+Either way, it will prompt you for your Livejournal username and password,
+then download all your journal entries, comments, and userpics.
+
+If you want to save your username and password so you don't have to type
+it every time you run ljdump, you can save it in the configuration file.
+
 The configuration is read from "ljdump.config". A sample configuration is
 provided in "ljdump.config.sample", which should be copied and then edited.
 The configuration settings are:
