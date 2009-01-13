@@ -1,5 +1,9 @@
 ChangeLog - ljdump
 
+Version 1.4 - 2009-01-13
+
+- Now supports downloading entries and comments from communities
+
 Version 1.3.3 - 2009-01-10
 
 - Feature: ljdump now prompts for login info if ljdump.config does not exist
