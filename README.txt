@@ -9,6 +9,10 @@ directly, or you may need to open a Terminal/Command Prompt window to run it.
 Either way, it will prompt you for your Livejournal username and password,
 then download all your journal entries, comments, and userpics.
 
+You may optionally download entries from a different journal (a community)
+where you are a member. If you are a community maintainer, you can also
+download comments from the community.
+
 If you want to save your username and password so you don't have to type
 it every time you run ljdump, you can save it in the configuration file.
 
@@ -25,6 +29,12 @@ The configuration settings are:
 
   password - The account password. This password is never sent in the
              clear; the livejournal "challenge" password mechanism is used.
+
+  journal - Optional: The journal to download entries from. If this is
+            not specified, the "username" journal is downloaded. If this
+            is specified, then only the named journals will be downloaded
+            (this element may be specified more than once to download
+            multiple journals).
 
 This program may be run as often as needed to bring the backup copy up
 to date. Both new and updated items are downloaded.

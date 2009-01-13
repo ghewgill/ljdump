@@ -88,8 +88,8 @@ def writedump(fn, event):
     dumpelement(f, "event", event)
     f.close()
 
-def writelast(username, lastsync, lastmaxid):
-    f = open("%s/.last" % username, "w")
+def writelast(journal, lastsync, lastmaxid):
+    f = open("%s/.last" % journal, "w")
     f.write("%s\n" % lastsync)
     f.write("%s\n" % lastmaxid)
     f.close()
@@ -107,15 +107,19 @@ def gettext(e):
         return ""
     return e[0].firstChild.nodeValue
 
-def ljdump(Server, Username, Password):
+def ljdump(Server, Username, Password, Journal):
     m = re.search("(.*)/interface/xmlrpc", Server)
     if m:
         Server = m.group(1)
+    if Username != Journal:
+        authas = "&authas=%s" % Journal
+    else:
+        authas = ""
 
-    print "Fetching journal entries for: %s" % Username
+    print "Fetching journal entries for: %s" % Journal
     try:
-        os.mkdir(Username)
-        print "Created subdirectory: %s" % Username
+        os.mkdir(Journal)
+        print "Created subdirectory: %s" % Journal
     except:
         pass
 
@@ -130,7 +134,7 @@ def ljdump(Server, Username, Password):
     lastsync = ""
     lastmaxid = 0
     try:
-        f = open("%s/.last" % Username, "r")
+        f = open("%s/.last" % Journal, "r")
         lastsync = f.readline()
         if lastsync[-1] == '\n':
             lastsync = lastsync[:len(lastsync)-1]
@@ -160,6 +164,7 @@ def ljdump(Server, Username, Password):
             'username': Username,
             'ver': 1,
             'lastsync': lastsync,
+            'usejournal': Journal,
         }, Password))
         #pprint.pprint(r)
         if len(r['syncitems']) == 0:
@@ -173,9 +178,10 @@ def ljdump(Server, Username, Password):
                         'ver': 1,
                         'selecttype': "one",
                         'itemid': item['item'][2:],
+                        'usejournal': Journal,
                     }, Password))
                     if e['events']:
-                        writedump("%s/%s" % (Username, item['item']), e['events'][0])
+                        writedump("%s/%s" % (Journal, item['item']), e['events'][0])
                         newentries += 1
                     else:
                         print "Unexpected empty item: %s" % item['item']
@@ -185,7 +191,7 @@ def ljdump(Server, Username, Password):
                     pprint.pprint(x)
                     errors += 1
             lastsync = item['time']
-            writelast(Username, lastsync, lastmaxid)
+            writelast(Journal, lastsync, lastmaxid)
 
     # The following code doesn't work because the server rejects our repeated calls.
     # http://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
@@ -205,21 +211,21 @@ def ljdump(Server, Username, Password):
     #    if len(r['events']) == 0:
     #        break
     #    for item in r['events']:
-    #        writedump("%s/L-%d" % (Username, item['itemid']), item)
+    #        writedump("%s/L-%d" % (Journal, item['itemid']), item)
     #        newentries += 1
     #        lastsync = item['eventtime']
 
-    print "Fetching journal comments for: %s" % Username
+    print "Fetching journal comments for: %s" % Journal
 
     try:
-        f = open("%s/comment.meta" % Username)
+        f = open("%s/comment.meta" % Journal)
         metacache = pickle.load(f)
         f.close()
     except:
         metacache = {}
 
     try:
-        f = open("%s/user.map" % Username)
+        f = open("%s/user.map" % Journal)
         usermap = pickle.load(f)
         f.close()
     except:
@@ -227,9 +233,15 @@ def ljdump(Server, Username, Password):
 
     maxid = lastmaxid
     while True:
-        r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
-        meta = xml.dom.minidom.parse(r)
-        r.close()
+        try:
+            try:
+                r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d%s" % (maxid+1, authas), headers = {'Cookie': "ljsession="+ljsession}))
+                meta = xml.dom.minidom.parse(r)
+            except:
+                print "*** Error fetching comment meta, possibly not community maintainer?"
+                break
+        finally:
+            r.close()
         for c in meta.getElementsByTagName("comment"):
             id = int(c.getAttribute("id"))
             metacache[id] = {
@@ -243,42 +255,26 @@ def ljdump(Server, Username, Password):
         if maxid >= int(meta.getElementsByTagName("maxid")[0].firstChild.nodeValue):
             break
 
-    f = open("%s/comment.meta" % Username, "w")
+    f = open("%s/comment.meta" % Journal, "w")
     pickle.dump(metacache, f)
     f.close()
 
-    f = open("%s/user.map" % Username, "w")
+    f = open("%s/user.map" % Journal, "w")
     pickle.dump(usermap, f)
-    f.close()
-
-    print "Fetching userpics for: %s" % Username
-    f = open("%s/userpics.xml" % Username, "w")
-    print >>f, """<?xml version="1.0"?>"""
-    print >>f, "<userpics>"
-    for p in userpics:
-        print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
-        pic = urllib2.urlopen(userpics[p])
-        ext = MimeExtensions.get(pic.info()["Content-Type"], "")
-        picfn = re.sub(r'[*?\\/:<>"|]', "_", p)
-        try:
-            picfn = codecs.utf_8_decode(picfn)[0]
-            picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
-        except:
-            # for installations where the above utf_8_decode doesn't work
-            picfn = "".join([ord(x) < 128 and x or "_" for x in picfn])
-            picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
-        shutil.copyfileobj(pic, picf)
-        pic.close()
-        picf.close()
-    print >>f, "</userpics>"
     f.close()
 
     newmaxid = maxid
     maxid = lastmaxid
     while True:
-        r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d" % (maxid+1), headers = {'Cookie': "ljsession="+ljsession}))
-        meta = xml.dom.minidom.parse(r)
-        r.close()
+        try:
+            try:
+                r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d%s" % (maxid+1, authas), headers = {'Cookie': "ljsession="+ljsession}))
+                meta = xml.dom.minidom.parse(r)
+            except:
+                print "*** Error fetching comment body, possibly not community maintainer?"
+                break
+        finally:
+            r.close()
         for c in meta.getElementsByTagName("comment"):
             id = int(c.getAttribute("id"))
             jitemid = c.getAttribute("jitemid")
@@ -293,7 +289,7 @@ def ljdump(Server, Username, Password):
             if usermap.has_key(c.getAttribute("posterid")):
                 comment["user"] = usermap[c.getAttribute("posterid")]
             try:
-                entry = xml.dom.minidom.parse("%s/C-%s" % (Username, jitemid))
+                entry = xml.dom.minidom.parse("%s/C-%s" % (Journal, jitemid))
             except:
                 entry = xml.dom.minidom.getDOMImplementation().createDocument(None, "comments", None)
             found = False
@@ -305,7 +301,7 @@ def ljdump(Server, Username, Password):
                 print "Warning: downloaded duplicate comment id %d in jitemid %s" % (id, jitemid)
             else:
                 entry.documentElement.appendChild(createxml(entry, "comment", comment))
-                f = codecs.open("%s/C-%s" % (Username, jitemid), "w", "UTF-8")
+                f = codecs.open("%s/C-%s" % (Journal, jitemid), "w", "UTF-8")
                 entry.writexml(f)
                 f.close()
                 newcomments += 1
@@ -316,7 +312,30 @@ def ljdump(Server, Username, Password):
 
     lastmaxid = maxid
 
-    writelast(Username, lastsync, lastmaxid)
+    writelast(Journal, lastsync, lastmaxid)
+
+    if Username == Journal:
+        print "Fetching userpics for: %s" % Username
+        f = open("%s/userpics.xml" % Username, "w")
+        print >>f, """<?xml version="1.0"?>"""
+        print >>f, "<userpics>"
+        for p in userpics:
+            print >>f, """<userpic keyword="%s" url="%s" />""" % (p, userpics[p])
+            pic = urllib2.urlopen(userpics[p])
+            ext = MimeExtensions.get(pic.info()["Content-Type"], "")
+            picfn = re.sub(r'[*?\\/:<>"|]', "_", p)
+            try:
+                picfn = codecs.utf_8_decode(picfn)[0]
+                picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
+            except:
+                # for installations where the above utf_8_decode doesn't work
+                picfn = "".join([ord(x) < 128 and x or "_" for x in picfn])
+                picf = open("%s/%s%s" % (Username, picfn, ext), "wb")
+            shutil.copyfileobj(pic, picf)
+            pic.close()
+            picf.close()
+        print >>f, "</userpics>"
+        f.close()
 
     if origlastsync:
         print "%d new entries, %d new comments (since %s)" % (newentries, newcomments, origlastsync)
@@ -331,6 +350,12 @@ if __name__ == "__main__":
         server = config.documentElement.getElementsByTagName("server")[0].childNodes[0].data
         username = config.documentElement.getElementsByTagName("username")[0].childNodes[0].data
         password = config.documentElement.getElementsByTagName("password")[0].childNodes[0].data
+        journals = config.documentElement.getElementsByTagName("journal")
+        if journals:
+            for e in journals:
+                ljdump(server, username, password, e.childNodes[0].data)
+        else:
+            ljdump(server, username, password, username)
     else:
         from getpass import getpass
         print "ljdump - livejournal archiver"
@@ -341,4 +366,13 @@ if __name__ == "__main__":
         username = raw_input("Username: ")
         password = getpass("Password: ")
         print
-    ljdump(server, username, password)
+        print "You may back up either your own journal, or a community."
+        print "If you are a community maintainer, you can back up both entries and comments."
+        print "If you are not a maintainer, you can back up only entries."
+        print
+        journal = raw_input("Journal to back up (or hit return to back up '%s'): " % username)
+        print
+        if journal:
+            ljdump(server, username, password, journal)
+        else:
+            ljdump(server, username, password, username)
