@@ -3,6 +3,8 @@
 import xml.dom.minidom 
 import os
 import codecs
+import sys
+
 from time import strptime, strftime
 
 def getNodeText(doc, nodename):
@@ -38,13 +40,13 @@ def appendTextNode(doc, parent, nodename, value):
     parent.appendChild(element)
 
 
-def addEntryForId(outDoc, username, id):
+def addEntryForId(outDoc, element, username, id):
     entryFile = open("%s/L-%s" % (username,id), "r")
     inDoc = xml.dom.minidom.parse(entryFile)
 
     # Create an entry element
     entry = outDoc.createElement("entry")
-    ljElement.appendChild(entry)
+    element.appendChild(entry)
 
     # Create an itemid element
     appendTextNode(outDoc, entry, "itemid", getNodeText(inDoc,"itemid"))
@@ -63,6 +65,8 @@ def addEntryForId(outDoc, username, id):
     # Create an allowmask element (doesn't exist in pydump output if public)
     maskText = getNodeText(inDoc, "allowmask")
 
+    # XXXSMG: consult L-1411 and L-976 for examples of security and
+    # allowmask use
     if(maskText != ""):
         appendTextNode(outDoc, entry, "allowmask", maskText)
     else:
@@ -128,54 +132,67 @@ def addCommentsForId(outDoc, entry, username, id):
         if(parentId != ""): 
             appendTextNode(outDoc, outComment, "parent_itemid", parentId)
 
+def main(argv): 
+    username = ""
+    entryLimit = 250
+    
+
+    if( len(argv) != 2 ):
+        print( "Usage: convertdump.py <username> <entrylimit>" )
+        return
+    else:
+        username = argv[0]
+        entryLimit = int(argv[1])
+
+    userDir = os.listdir(username)
+
+    highNum = -1
+    entryArray = []
+
+    # get the list of entries
+    for file in userDir:
+        if file.startswith("L-"):
+            entryNum = int(file.replace("L-",""))
+
+            entryArray.append(entryNum)
+
+            if( highNum < entryNum ):
+                highNum = entryNum
+
+    entryArray.sort()
 
 
+    # Create the minidom document
+    outDoc = xml.dom.minidom.Document()
 
-userDir = os.listdir("grahams")
+    # Create the <livejournal> base element
+    ljElement = outDoc.createElement("livejournal")
+    outDoc.appendChild(ljElement)
 
-highNum = -1
-entryArray = []
+    entryLimit = 250
+    currentFileEntry = 0
 
-# get the list of entries
-for file in userDir:
-    if file.startswith("L-"):
-        entryNum = int(file.replace("L-",""))
+    # start processing entries
+    for entry in entryArray:
+        addEntryForId(outDoc, ljElement, username, entry)
 
-        entryArray.append(entryNum)
+        currentFileEntry += 1
 
-        if( highNum < entryNum ):
-            highNum = entryNum
+        if( currentFileEntry == entryLimit ):
 
-entryArray.sort()
+            f = open("%s - %s.xml" % (username, entry), "w")
+            tempXML = outDoc.toxml("UTF-8")
+            f.write(tempXML)
+            
+            currentFileEntry = 0
 
+            # Create the minidom document
+            outDoc = xml.dom.minidom.Document()
 
-# Create the minidom document
-outDoc = xml.dom.minidom.Document()
+            # Create the <livejournal> base element
+            ljElement = outDoc.createElement("livejournal")
+            outDoc.appendChild(ljElement)
 
-# Create the <livejournal> base element
-ljElement = outDoc.createElement("livejournal")
-outDoc.appendChild(ljElement)
+if __name__ == "__main__":
+    main(sys.argv[1:])
 
-breakup = 250
-currentFileEntry = 0
-
-# start processing entries
-for entry in entryArray:
-    addEntryForId(outDoc, "grahams", entry)
-
-    currentFileEntry += 1
-
-    if( currentFileEntry == breakup ):
-
-        f = open("grahams - %s.xml" % entry, "w")
-        tempXML = outDoc.toxml("UTF-8")
-        f.write(tempXML)
-        
-        currentFileEntry = 0
-
-        # Create the minidom document
-        outDoc = xml.dom.minidom.Document()
-
-        # Create the <livejournal> base element
-        ljElement = outDoc.createElement("livejournal")
-        outDoc.appendChild(ljElement)
