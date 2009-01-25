@@ -2,6 +2,7 @@
 
 import xml.dom.minidom 
 import os
+import codecs
 from time import strptime, strftime
 
 def getNodeText(doc, nodename):
@@ -19,10 +20,19 @@ def getNodeText(doc, nodename):
     return rc
 
 def appendTextNode(doc, parent, nodename, value):
+    nodeValue = value
+
+    # make sure value is properly encoded
+    try:
+        bytes = nodeValue.encode("UTF-8")
+    except:
+        bytes = nodeValue.encode("cp1252")
+        nodeValue = unicode(bytes, "UTF-8")
+
     element = doc.createElement(nodename)
 
-    if( value != "" ): 
-        textNode = doc.createTextNode(value)
+    if( nodeValue != "" ): 
+        textNode = doc.createTextNode(nodeValue)
         element.appendChild(textNode)
 
     parent.appendChild(element)
@@ -51,10 +61,11 @@ def addEntryForId(outDoc, username, id):
     appendTextNode(outDoc, entry, "event", getNodeText(event, "event"))
 
     # Create an allowmask element (doesn't exist in pydump output if public)
-    try:
-        appendTextNode(outDoc, entry, "allowmask", 
-            getNodeText(inDoc, "allowmask"))
-    except:
+    maskText = getNodeText(inDoc, "allowmask")
+
+    if(maskText != ""):
+        appendTextNode(outDoc, entry, "allowmask", maskText)
+    else:
         appendTextNode(outDoc, entry, "allowmask", "0")
 
     # Create a taglist element
@@ -67,8 +78,7 @@ def addEntryForId(outDoc, username, id):
 def addCommentsForId(outDoc, entry, username, id):
     try: 
         commentFile = open("%s/C-%s" % (username,id), "r")
-    except:
-        # there are no comments for this entry
+    except IOError:  # there are no comments for this entry
         return
 
     inDoc = xml.dom.minidom.parse(commentFile)
@@ -121,13 +131,6 @@ def addCommentsForId(outDoc, entry, username, id):
 
 
 
-# Create the minidom document
-outDoc = xml.dom.minidom.Document()
-
-# Create the <livejournal> base element
-ljElement = outDoc.createElement("livejournal")
-outDoc.appendChild(ljElement)
-
 userDir = os.listdir("grahams")
 
 highNum = -1
@@ -145,11 +148,34 @@ for file in userDir:
 
 entryArray.sort()
 
+
+# Create the minidom document
+outDoc = xml.dom.minidom.Document()
+
+# Create the <livejournal> base element
+ljElement = outDoc.createElement("livejournal")
+outDoc.appendChild(ljElement)
+
+breakup = 250
+currentFileEntry = 0
+
 # start processing entries
 for entry in entryArray:
-    print entry
     addEntryForId(outDoc, "grahams", entry)
 
+    currentFileEntry += 1
 
-# Print our newly created XML
-print outDoc.toprettyxml(indent="  ")
+    if( currentFileEntry == breakup ):
+
+        f = open("grahams - %s.xml" % entry, "w")
+        tempXML = outDoc.toxml("UTF-8")
+        f.write(tempXML)
+        
+        currentFileEntry = 0
+
+        # Create the minidom document
+        outDoc = xml.dom.minidom.Document()
+
+        # Create the <livejournal> base element
+        ljElement = outDoc.createElement("livejournal")
+        outDoc.appendChild(ljElement)
