@@ -169,7 +169,6 @@ def main(argv):
     ljElement = outDoc.createElement("livejournal")
     outDoc.appendChild(ljElement)
 
-    entryLimit = 250
     currentFileEntry = 0
 
     # start processing entries
@@ -178,7 +177,7 @@ def main(argv):
 
         currentFileEntry += 1
 
-        if( currentFileEntry == entryLimit ):
+        if( currentFileEntry == entryLimit or entry == entryArray[-1] ):
 
             f = open("%s - %s.xml" % (username, entry), "w")
             tempXML = outDoc.toxml("UTF-8")
