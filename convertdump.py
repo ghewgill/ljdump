@@ -65,13 +65,12 @@ def appendTextNode(doc, parent, nodename, value):
     parent.appendChild(element)
 
 
-def addEntryForId(outDoc, element, username, id):
+def addEntryForId(outDoc, element, username, id, includeSecure):
     entryFile = open("%s/L-%s" % (username,id), "r")
     inDoc = xml.dom.minidom.parse(entryFile)
 
     # Create an entry element
     entry = outDoc.createElement("entry")
-    element.appendChild(entry)
 
     # Create an itemid element
     appendTextNode(outDoc, entry, "itemid", getNodeText(inDoc,"itemid"))
@@ -87,15 +86,28 @@ def addEntryForId(outDoc, element, username, id):
     event = inDoc.getElementsByTagName("event")[0]
     appendTextNode(outDoc, entry, "event", getNodeText(event, "event"))
 
-    # Create an allowmask element (doesn't exist in pydump output if public)
-    maskText = getNodeText(inDoc, "allowmask")
+    security = getNodeText(inDoc, "security")
 
-    # XXXSMG: consult L-1411 and L-976 for examples of security and
-    # allowmask use
-    if(maskText != ""):
-        appendTextNode(outDoc, entry, "allowmask", maskText)
-    else:
-        appendTextNode(outDoc, entry, "allowmask", "0")
+    if(security != ""):
+        # don't append this entry unless the user provided the argument
+        if(includeSecure == False):
+            print("omitting secure entry: L-%s" % id)
+            return 
+        else:
+            if(security == "usemask"):
+                print("including allowmask entry: L-%s" % id)
+
+                # Create an allowmask element 
+                maskText = getNodeText(inDoc, "allowmask")
+
+                if(maskText != ""):
+                    appendTextNode(outDoc, entry, "allowmask", maskText)
+                else:
+                    appendTextNode(outDoc, entry, "allowmask", "0")
+            else:
+                print("including private entry: L-%s" % id)
+
+        appendTextNode(outDoc, entry, "security", security)
 
     # Create a taglist element
     appendTextNode(outDoc, entry, "taglist", getNodeText(inDoc, "taglist"))
@@ -103,6 +115,8 @@ def addEntryForId(outDoc, element, username, id):
     # XXXSMG: make sure there is a comment file before trying to do anything
     # with it
     addCommentsForId(outDoc, entry, username, id)
+
+    element.appendChild(entry)
 
 def addCommentsForId(outDoc, entry, username, id):
     try: 
@@ -160,14 +174,22 @@ def addCommentsForId(outDoc, entry, username, id):
 def main(argv): 
     username = ""
     entryLimit = 250
+    includeSecure = False;
     
-
-    if( len(argv) != 2 ):
+    if( len(argv) < 2 ):
         print( "Usage: convertdump.py <username> <entrylimit>" )
         return
     else:
         username = argv[0]
         entryLimit = int(argv[1])
+
+        try:
+            includeSecure = bool(argv[2])
+        except IndexError:
+            includeSecure = False
+
+    if(includeSecure == True):
+        print( "Warning:  Including secure entries in XML output" )
 
     userDir = os.listdir(username)
 
@@ -186,7 +208,6 @@ def main(argv):
 
     entryArray.sort()
 
-
     # Create the minidom document
     outDoc = xml.dom.minidom.Document()
 
@@ -198,7 +219,7 @@ def main(argv):
 
     # start processing entries
     for entry in entryArray:
-        addEntryForId(outDoc, ljElement, username, entry)
+        addEntryForId(outDoc, ljElement, username, entry, includeSecure)
 
         currentFileEntry += 1
 
