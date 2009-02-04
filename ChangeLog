@@ -1,5 +1,9 @@
 ChangeLog - ljdump
 
+Version 1.5 - 2009-02-04
+
+- Include convertdump.py for Wordpress conversions.
+
 Version 1.4 - 2009-01-13
 
 - Now supports downloading entries and comments from communities

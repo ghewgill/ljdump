@@ -41,3 +41,21 @@ to date. Both new and updated items are downloaded.
 
 The community http://ljdump.livejournal.com has been set up for questions
 or comments.
+
+-----
+
+convertdump - convert ljdump format to wordpress importer format
+Contributed by Sean M. Graham (www.sean-graham.com) and others
+
+This will convert a pydump archive into something compatible with the
+WordPress LiveJournal importer.  This is the same format used by the Windows
+ljArchive exporter.
+
+Arguments:
+    -u  --user      username of archive to process [required]
+    -l  --limit     limit the number of entries in each xml file (default 250)
+    -i  --insecure  include private and protected entries in the output
+    -h  --help      show this help page
+
+Example:
+    ./convertdump.py --user stevemartin --limit 200 --insecure
