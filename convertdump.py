@@ -29,6 +29,7 @@ import xml.dom.minidom
 import os
 import codecs
 import sys
+import getopt
 
 from time import strptime, strftime
 
@@ -171,25 +172,59 @@ def addCommentsForId(outDoc, entry, username, id):
         if(parentId != ""): 
             appendTextNode(outDoc, outComment, "parent_itemid", parentId)
 
+def usage():
+    print( "Usage: convertdump.py [arguments]" )
+    print( """
+This will convert a pydump archive into something compatible with the
+WordPress LiveJournal importer.  This is the same format used by the Windows
+ljArchive exporter.
+
+Arguments:
+    -u  --user      username of archive to process [required]
+    -l  --limit     limit the number of entries in each xml file (default 250)
+    -i  --insecure  include private and protected entries in the output
+    -h  --help      show this help page
+
+Example:
+    ./convertdump.py --user stevemartin --limit 200 --insecure
+""")
+
+
 def main(argv): 
     username = ""
     entryLimit = 250
     includeSecure = False;
-    
-    if( len(argv) < 2 ):
-        print( "Usage: convertdump.py <username> <entrylimit>" )
-        return
-    else:
-        username = argv[0]
-        entryLimit = int(argv[1])
 
-        try:
-            includeSecure = bool(argv[2])
-        except IndexError:
-            includeSecure = False
+    if( len(argv) == 0 ):
+        usage()
+        sys.exit(2)
 
-    if(includeSecure == True):
-        print( "Warning:  Including secure entries in XML output" )
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hu:l:i", ["help",
+                                                            "user=",
+                                                            "limit=",
+                                                            "insecure"])
+    except getopt.GetoptError, err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+
+    for o, a in opts:
+        if o == "-v":
+            verbose = True
+        elif o in ("-u", "--user"):
+            username = a
+        elif o in ("-l", "--limit"):
+            entryLimit = int(a)
+        elif o in ("-i", "--insecure"):
+            print( "Warning:  Including secure entries in XML output" )
+            includeSecure = True
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        else:
+            assert False, "unhandled option"
 
     userDir = os.listdir(username)
 
