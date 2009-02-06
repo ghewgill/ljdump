@@ -30,6 +30,7 @@ import os
 import codecs
 import sys
 import getopt
+import re
 
 from time import strptime, strftime
 
@@ -85,7 +86,9 @@ def addEntryForId(outDoc, element, username, id, includeSecure):
     # Create an event node (special case because for some reason there are two
     # 'event' elements in the pydump output, which is probably LJ's fault)
     event = inDoc.getElementsByTagName("event")[0]
-    appendTextNode(outDoc, entry, "event", getNodeText(event, "event"))
+    eventText = getNodeText(event, "event")
+
+    appendTextNode(outDoc, entry, "event", replaceLJTags(eventText))
 
     security = getNodeText(inDoc, "security")
 
@@ -152,8 +155,8 @@ def addCommentsForId(outDoc, entry, username, id):
             getNodeText(comment, "subject"))
 
         # Create an event element
-        appendTextNode(outDoc, outComment, "event", 
-            getNodeText(comment, "body"))
+        bodyText = getNodeText(comment, "body")
+        appendTextNode(outDoc, outComment, "event", replaceLJTags(bodyText))
 
         # Create the author element
         author = outDoc.createElement("author")
@@ -171,6 +174,13 @@ def addCommentsForId(outDoc, entry, username, id):
         parentId = getNodeText(comment, "parentid")
         if(parentId != ""): 
             appendTextNode(outDoc, outComment, "parent_itemid", parentId)
+
+def replaceLJTags(entry):
+    # regex to replace <lj user="jeebus" /> tags
+    fixedUserTags = re.sub("<lj user=\"(.*?)\" ?/?>", "<a href=\"http://\\1.livejournal.com/\" class=\"lj-user\">\\1</a>", entry)
+
+    return fixedUserTags
+
 
 def usage():
     print( "Usage: convertdump.py [arguments]" )
