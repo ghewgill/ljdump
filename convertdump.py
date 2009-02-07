@@ -176,10 +176,28 @@ def addCommentsForId(outDoc, entry, username, id):
             appendTextNode(outDoc, outComment, "parent_itemid", parentId)
 
 def replaceLJTags(entry):
-    # regex to replace <lj user="jeebus" /> tags
-    fixedUserTags = re.sub("<lj user=\"(.*?)\" ?/?>", "<a href=\"http://\\1.livejournal.com/\" class=\"lj-user\">\\1</a>", entry)
+    rv = entry
 
-    return fixedUserTags
+    # replace lj user tags
+    userRE = re.compile('<lj user="(.*?)" ?/?>', re.IGNORECASE)
+    rv = re.sub(userRE, '<a href="http://\\1.livejournal.com/" class="lj-user">\\1</a>', rv) 
+
+    # replace lj comm tags
+    commRE = re.compile('<lj comm="(.*?)" ?/?>', re.IGNORECASE)
+    rv = re.sub(commRE, '<a href="http://community.livejournal.com/\\1/" class="lj-comm">\\1</a>', rv) 
+
+    # replace lj-cut tags
+    namedCutRE = re.compile('<lj-cut +text="(.*?)" ?/?>', 
+                            re.IGNORECASE|re.DOTALL)
+    rv = re.sub(namedCutRE, '<!--more \\1-->', rv)
+    
+    cutRE = re.compile('<lj-cut>', re.IGNORECASE)
+    rv = re.sub(cutRE, '<!--more-->', rv)
+
+    cutRE = re.compile('</lj-cut>', re.IGNORECASE)
+    rv = re.sub(cutRE, '', rv)
+
+    return rv
 
 
 def usage():
