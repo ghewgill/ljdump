@@ -175,27 +175,42 @@ def addCommentsForId(outDoc, entry, username, id):
         if(parentId != ""): 
             appendTextNode(outDoc, outComment, "parent_itemid", parentId)
 
+
+# regular expressions used in replaceLJTags()
+#   (global for later reuse - suggestion by jparise)
+
+userRE = re.compile('<lj user="(.*?)" ?/?>', re.IGNORECASE)
+commRE = re.compile('<lj comm="(.*?)" ?/?>', re.IGNORECASE)
+namedCutRE = re.compile('<lj-cut +text="(.*?)" ?/?>', 
+                        re.IGNORECASE|re.DOTALL)
+cutRE = re.compile('<lj-cut>', re.IGNORECASE)
+cutRE = re.compile('</lj-cut>', re.IGNORECASE)
+embedRE = re.compile('<lj-embed id="[0-9]+">', re.IGNORECASE)
+
 def replaceLJTags(entry):
     rv = entry
 
-    # replace lj user tags
     userRE = re.compile('<lj user="(.*?)" ?/?>', re.IGNORECASE)
+    commRE = re.compile('<lj comm="(.*?)" ?/?>', re.IGNORECASE)
+    namedCutRE = re.compile('<lj-cut +text="(.*?)" ?/?>', 
+                            re.IGNORECASE|re.DOTALL)
+    cutRE = re.compile('<lj-cut>', re.IGNORECASE)
+    cutRE = re.compile('</lj-cut>', re.IGNORECASE)
+    embedRE = re.compile('<lj-embed id="[0-9]+">', re.IGNORECASE)
+
+    # replace lj user tags
     rv = re.sub(userRE, '<a href="http://\\1.livejournal.com/" class="lj-user">\\1</a>', rv) 
 
     # replace lj comm tags
-    commRE = re.compile('<lj comm="(.*?)" ?/?>', re.IGNORECASE)
     rv = re.sub(commRE, '<a href="http://community.livejournal.com/\\1/" class="lj-comm">\\1</a>', rv) 
 
     # replace lj-cut tags
-    namedCutRE = re.compile('<lj-cut +text="(.*?)" ?/?>', 
-                            re.IGNORECASE|re.DOTALL)
     rv = re.sub(namedCutRE, '<!--more \\1-->', rv)
-    
-    cutRE = re.compile('<lj-cut>', re.IGNORECASE)
     rv = re.sub(cutRE, '<!--more-->', rv)
-
-    cutRE = re.compile('</lj-cut>', re.IGNORECASE)
     rv = re.sub(cutRE, '', rv)
+
+    # replace lj-embed tags
+    rv = re.sub(embedRE, '', rv)
 
     return rv
 
