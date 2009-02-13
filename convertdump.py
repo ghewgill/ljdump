@@ -199,7 +199,7 @@ def replaceLJTags(entry):
     embedRE = re.compile('<lj-embed id="[0-9]+">', re.IGNORECASE)
 
     # replace lj user tags
-    rv = re.sub(userRE, '<a href="http://\\1.livejournal.com/" class="lj-user">\\1</a>', rv) 
+    rv = re.sub(userRE, '<a href="http://www.livejournal.com/users/\\1" class="lj-user">\\1</a>', rv) 
 
     # replace lj comm tags
     rv = re.sub(commRE, '<a href="http://community.livejournal.com/\\1/" class="lj-comm">\\1</a>', rv) 
@@ -210,7 +210,10 @@ def replaceLJTags(entry):
     rv = re.sub(cutRE, '', rv)
 
     # replace lj-embed tags
-    rv = re.sub(embedRE, '', rv)
+    # this doesn't actually work.  LJ doesn't include the embedded content
+    # when ljdump calls 'getevents', but instead includes an lj-embed tag
+    # with an id and nothing else.
+    #rv = re.sub(embedRE, '', rv)
 
     return rv
 
