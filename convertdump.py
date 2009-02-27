@@ -190,14 +190,6 @@ embedRE = re.compile('<lj-embed id="[0-9]+">', re.IGNORECASE)
 def replaceLJTags(entry):
     rv = entry
 
-    userRE = re.compile('<lj user="(.*?)" ?/?>', re.IGNORECASE)
-    commRE = re.compile('<lj comm="(.*?)" ?/?>', re.IGNORECASE)
-    namedCutRE = re.compile('<lj-cut +text="(.*?)" ?/?>', 
-                            re.IGNORECASE|re.DOTALL)
-    cutRE = re.compile('<lj-cut>', re.IGNORECASE)
-    cutRE = re.compile('</lj-cut>', re.IGNORECASE)
-    embedRE = re.compile('<lj-embed id="[0-9]+">', re.IGNORECASE)
-
     # replace lj user tags
     rv = re.sub(userRE, '<a href="http://www.livejournal.com/users/\\1" class="lj-user">\\1</a>', rv) 
 
