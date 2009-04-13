@@ -379,3 +379,4 @@ if __name__ == "__main__":
             ljdump(server, username, password, journal)
         else:
             ljdump(server, username, password, username)
+# vim:ts=4 et:	
