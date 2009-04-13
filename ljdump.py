@@ -241,7 +241,10 @@ def ljdump(Server, Username, Password, Journal):
                 print "*** Error fetching comment meta, possibly not community maintainer?"
                 break
         finally:
-            r.close()
+            try:
+                r.close()
+            except AttributeError: # r is sometimes a dict for unknown reasons
+                pass
         for c in meta.getElementsByTagName("comment"):
             id = int(c.getAttribute("id"))
             metacache[id] = {
