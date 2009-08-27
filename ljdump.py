@@ -244,8 +244,9 @@ def ljdump(Server, Username, Password, Journal):
             try:
                 r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_meta&startid=%d%s" % (maxid+1, authas), headers = {'Cookie': "ljsession="+ljsession}))
                 meta = xml.dom.minidom.parse(r)
-            except:
+            except Exception, x:
                 print "*** Error fetching comment meta, possibly not community maintainer?"
+                print "***", x
                 break
         finally:
             try:
@@ -280,8 +281,9 @@ def ljdump(Server, Username, Password, Journal):
             try:
                 r = urllib2.urlopen(urllib2.Request(Server+"/export_comments.bml?get=comment_body&startid=%d%s" % (maxid+1, authas), headers = {'Cookie': "ljsession="+ljsession}))
                 meta = xml.dom.minidom.parse(r)
-            except:
+            except Exception, x:
                 print "*** Error fetching comment body, possibly not community maintainer?"
+                print "***", x
                 break
         finally:
             r.close()
