@@ -24,7 +24,7 @@
 #
 # Copyright (c) 2005-2009 Greg Hewgill
 
-import codecs, md5, os, pickle, pprint, re, shutil, sys, urllib2, xml.dom.minidom, xmlrpclib
+import codecs, os, pickle, pprint, re, shutil, sys, urllib2, xml.dom.minidom, xmlrpclib
 from xml.sax import saxutils
 
 MimeExtensions = {
@@ -33,8 +33,14 @@ MimeExtensions = {
     "image/png": ".png",
 }
 
+try:
+    from hashlib import md5
+except ImportError:
+    import md5 as _md5
+    md5 = _md5.new
+
 def calcchallenge(challenge, password):
-    return md5.new(challenge+md5.new(password).hexdigest()).hexdigest()
+    return md5(challenge+md5(password).hexdigest()).hexdigest()
 
 def flatresponse(response):
     r = {}
