@@ -163,7 +163,8 @@ def ljdump(Server, Username, Password, Journal):
         'getpickwurls': 1,
     }, Password))
     userpics = dict(zip(map(str, r['pickws']), r['pickwurls']))
-    userpics['*'] = r['defaultpicurl']
+    if r['defaultpicurl']:
+        userpics['*'] = r['defaultpicurl']
 
     while True:
         r = server.LJ.XMLRPC.syncitems(dochallenge(server, {
