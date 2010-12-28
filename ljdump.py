@@ -2,7 +2,7 @@
 #
 # ljdump.py - livejournal archiver
 # Greg Hewgill <greg@hewgill.com> http://hewgill.com
-# Version 1.5
+# Version 1.5.1
 #
 # LICENSE
 #
@@ -22,7 +22,7 @@
 #    misrepresented as being the original software.
 # 3. This notice may not be removed or altered from any source distribution.
 #
-# Copyright (c) 2005-2009 Greg Hewgill
+# Copyright (c) 2005-2010 Greg Hewgill and contributors
 
 import codecs, os, pickle, pprint, re, shutil, sys, urllib2, xml.dom.minidom, xmlrpclib
 from xml.sax import saxutils

@@ -1,5 +1,10 @@
 ChangeLog - ljdump
 
+Version 1.5.1 - 2010-12-29
+
+- Suppress warning about deprecated md5 module
+- Don't attempt to fetch default userpic if the user hasn't set one
+
 Version 1.5 - 2009-02-04
 
 - Include convertdump.py for Wordpress conversions.
