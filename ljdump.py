@@ -372,9 +372,11 @@ if __name__ == "__main__":
         from getpass import getpass
         print "ljdump - livejournal archiver"
         print
+        default_server = "http://livejournal.com"
+        server = raw_input("Alternative server to use (e.g. 'https://www.dreamwidth.org'), or hit return for '%s': " % default_server) or default_server
+        print
         print "Enter your Livejournal username and password."
         print
-        server = "http://livejournal.com"
         username = raw_input("Username: ")
         password = getpass("Password: ")
         print
