@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # ljdump-gui.py - gui interface to ljdump
-# Greg Hewgill <greg@hewgill.com> http://hewgill.com
+# Greg Hewgill <greg@hewgill.com> https://hewgill.com
 #
 # NOTE: This is a work in progress and is probably not suitable for
 #       general release just yet.
@@ -52,7 +52,7 @@ def do_ok(event = None):
     ok['state'] = DISABLED
     cancel['state'] = DISABLED
     global gWorkerThread
-    gWorkerThread = threading.Thread(None, ljdump.ljdump, args=("http://livejournal.com", username.get(), password.get(), journal.get()))
+    gWorkerThread = threading.Thread(None, ljdump.ljdump, args=("https://livejournal.com", username.get(), password.get(), journal.get()))
     gWorkerThread.start()
     poll()
 
