@@ -39,7 +39,7 @@ The configuration settings are:
 This program may be run as often as needed to bring the backup copy up
 to date. Both new and updated items are downloaded.
 
-The community http://ljdump.livejournal.com has been set up for questions
+The community https://ljdump.livejournal.com has been set up for questions
 or comments.
 
 -----

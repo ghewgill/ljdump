@@ -191,10 +191,10 @@ def replaceLJTags(entry):
     rv = entry
 
     # replace lj user tags
-    rv = re.sub(userRE, '<a href="http://www.livejournal.com/users/\\1" class="lj-user">\\1</a>', rv) 
+    rv = re.sub(userRE, '<a href="https?://www.livejournal.com/users/\\1" class="lj-user">\\1</a>', rv) 
 
     # replace lj comm tags
-    rv = re.sub(commRE, '<a href="http://community.livejournal.com/\\1/" class="lj-comm">\\1</a>', rv) 
+    rv = re.sub(commRE, '<a href="https?://community.livejournal.com/\\1/" class="lj-comm">\\1</a>', rv) 
 
     # replace lj-cut tags
     rv = re.sub(namedCutRE, '<!--more \\1-->', rv)

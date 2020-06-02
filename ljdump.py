@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # ljdump.py - livejournal archiver
-# Greg Hewgill <greg@hewgill.com> http://hewgill.com
+# Greg Hewgill <greg@hewgill.com> https://hewgill.com/
 # Version 1.5.1
 #
 # LICENSE
@@ -202,7 +202,7 @@ def ljdump(Server, Username, Password, Journal, verbose=True):
             writelast(Journal, lastsync, lastmaxid)
 
     # The following code doesn't work because the server rejects our repeated calls.
-    # http://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
+    # https://www.livejournal.com/doc/server/ljp.csp.xml-rpc.getevents.html
     # contains the statement "You should use the syncitems selecttype in
     # conjuntions [sic] with the syncitems protocol mode", but provides
     # no other explanation about how these two function calls should
@@ -380,7 +380,7 @@ if __name__ == "__main__":
         from getpass import getpass
         print "ljdump - livejournal archiver"
         print
-        default_server = "http://livejournal.com"
+        default_server = "https://livejournal.com"
         server = raw_input("Alternative server to use (e.g. 'https://www.dreamwidth.org'), or hit return for '%s': " % default_server) or default_server
         print
         print "Enter your Livejournal username and password."
